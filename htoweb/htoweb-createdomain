@@ -24,15 +24,15 @@ createdomain() {
   DOMAIN=${1//[-._]/}
 
   #Create User
-  /usr/sbin/useradd -s /bin/false -d /var/www/$DOMAIN/htdocs $DOMAIN
-  /usr/sbin/adduser www-data $DOMAIN
+  useradd -s /bin/false -d /var/www/$DOMAIN/htdocs $DOMAIN
+  adduser www-data $DOMAIN
 
   #Create folders
-  /bin/mkdir -p /var/www/$DOMAIN/htdocs/public
-  /bin/mkdir /var/www/$DOMAIN/logs
-  /bin/mkdir /var/www/$DOMAIN/conf
-  /bin/mkdir /var/www/$DOMAIN/sessions
-  /bin/mkdir /var/www/$DOMAIN/tmp
+  mkdir -p /var/www/$DOMAIN/htdocs/public
+  mkdir /var/www/$DOMAIN/logs
+  mkdir /var/www/$DOMAIN/conf
+  mkdir /var/www/$DOMAIN/sessions
+  mkdir /var/www/$DOMAIN/tmp
 
   #Create VirtualHost config
   ./htoweb-createvhost $DOMAIN $FULLDOMAIN
@@ -46,24 +46,24 @@ createdomain() {
   ./htoweb-createphpini $DOMAIN
 
   #Set owners to dirs/files
-  /bin/chown root:$DOMAIN /var/www/$DOMAIN
-  /bin/chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/*
-  /bin/chown root:root /var/www/$DOMAIN/logs
-  /bin/chown root:$DOMAIN /var/www/$DOMAIN/conf/php.ini
-  /bin/chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/conf/fcgid
+  chown root:$DOMAIN /var/www/$DOMAIN
+  chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/*
+  chown root:root /var/www/$DOMAIN/logs
+  chown root:$DOMAIN /var/www/$DOMAIN/conf/php.ini
+  chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/conf/fcgid
   
   #Set permissions to dirs/files
-  /bin/chmod 750 /var/www/$DOMAIN
-  /bin/chmod 750 /var/www/$DOMAIN/*
-  /bin/chmod 640 /var/www/$DOMAIN/conf/php.ini
-  /bin/chmod 750 /var/www/$DOMAIN/conf/fcgid
-  /bin/chmod 750 /var/www/$DOMAIN/htdocs
+  chmod 750 /var/www/$DOMAIN
+  chmod 750 /var/www/$DOMAIN/*
+  chmod 640 /var/www/$DOMAIN/conf/php.ini
+  chmod 750 /var/www/$DOMAIN/conf/fcgid
+  chmod 750 /var/www/$DOMAIN/htdocs
 
   #Run htoweb-updateprivs
   ./htoweb-updateprivs $DOMAIN
 
   #Enable VirtualHost and reload Apache
-  /usr/sbin/a2ensite $DOMAIN
+  a2ensite $DOMAIN
   /etc/init.d/apache2 reload
 
   exit 0
@@ -76,7 +76,6 @@ if [ "$#" -eq "0" ]
 then
 
   help
-  exit 0
 
 elif [ "$#" -eq "1" ]
 then
