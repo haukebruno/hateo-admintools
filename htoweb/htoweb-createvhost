@@ -1,0 +1,29 @@
+#!/bin/bash
+
+cat >> /etc/apache2/sites-available/$1 << EOC
+<VirtualHost *:80>
+    ServerName $2
+    ServerAdmin admins@hateo.de
+
+    Include /etc/apache2/mods-available/fcgid.conf
+
+    DocumentRoot /var/www/$1/htdocs/public
+    SuexecUserGroup $1 $1
+
+    <Directory /var/www/$1/htdocs/public>
+        FCGIWrapper /var/www/$1/conf/fcgid .php
+        <FilesMatch \.php$>
+        	SetHandler fcgid-script
+        </FilesMatch>
+        Options +ExecCGI -Indexes
+        Order allow,deny
+        allow from all
+        AllowOverride All
+    </Directory>
+
+    LogLevel warn
+    ErrorLog /var/www/$1/logs/error.log
+    CustomLog /var/www/$1/logs/access.log combined
+</VirtualHost>
+
+EOC

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+/bin/chown $1:$1 /var/www/$1/htdocs
+/usr/bin/find /var/www/$1/htdocs -type d -exec /bin/chmod 750 {} +
+/usr/bin/find /var/www/$1/htdocs -type f -exec /bin/chmod 640 {} +
+
+

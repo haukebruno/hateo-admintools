@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cat >> /var/www/$1/conf/php.ini << EOC
+
+open_basedir = /var/www/$1/htdocs/public:/var/www/$1/tmp/
+upload_tmp_dir = /var/www/$1/tmp
+soap.wsdl_cache_dir = /var/www/$1/tmp
+session.save_path = /var/www/$1/sessions
+
+EOC

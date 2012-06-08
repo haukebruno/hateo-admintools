@@ -1,0 +1,114 @@
+#!/bin/bash
+
+function help() {
+  
+  echo -e "\r\nUsage:
+  -h, --help\t      Print this help
+  "  
+  exit 0
+
+}
+
+function missing_arg() {
+
+  echo -e "ERROR: Missing argument for $1\r\n"
+  exit 1
+
+}
+
+#Main functions
+
+createdomain() {
+
+  FULLDOMAIN=$1
+  DOMAIN=${1//[-._]/}
+
+  #Create User
+  /usr/sbin/useradd -s /bin/false -d /var/www/$DOMAIN/htdocs $DOMAIN
+  /usr/sbin/adduser www-data $DOMAIN
+
+  #Create folders
+  /bin/mkdir -p /var/www/$DOMAIN/htdocs/public
+  /bin/mkdir /var/www/$DOMAIN/logs
+  /bin/mkdir /var/www/$DOMAIN/conf
+  /bin/mkdir /var/www/$DOMAIN/sessions
+  /bin/mkdir /var/www/$DOMAIN/tmp
+
+  #Create VirtualHost config
+  ./htoweb-createvhost $DOMAIN $FULLDOMAIN
+
+  #Create FCGID Wrapper Script
+  echo -e "#!/bin/sh" >> /var/www/$DOMAIN/conf/fcgid
+  echo -e 'export PHPRC="/var/www/$DOMAIN/conf/"' >> /var/www/$DOMAIN/conf/fcgid
+  echo -e "exec /usr/bin/php5-cgi" >> /var/www/$DOMAIN/conf/fcgid
+
+  #Create php.ini
+  ./htoweb-createphpini $DOMAIN
+
+  #Set owners to dirs/files
+  /bin/chown root:$DOMAIN /var/www/$DOMAIN
+  /bin/chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/*
+  /bin/chown root:root /var/www/$DOMAIN/logs
+  /bin/chown root:$DOMAIN /var/www/$DOMAIN/conf/php.ini
+  /bin/chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/conf/fcgid
+  
+  #Set permissions to dirs/files
+  /bin/chmod 750 /var/www/$DOMAIN
+  /bin/chmod 750 /var/www/$DOMAIN/*
+  /bin/chmod 640 /var/www/$DOMAIN/conf/php.ini
+  /bin/chmod 750 /var/www/$DOMAIN/conf/fcgid
+  /bin/chmod 750 /var/www/$DOMAIN/htdocs
+
+  #Run htoweb-updateprivs
+  ./htoweb-updateprivs $DOMAIN
+
+  #Enable VirtualHost and reload Apache
+  /usr/sbin/a2ensite $DOMAIN
+  /etc/init.d/apache2 reload
+
+  exit 0
+
+}
+
+#Command Line Options
+
+if [ "$#" -eq "0" ]
+then
+
+  help
+  exit 0
+
+elif [ "$#" -eq "1" ]
+then
+
+  if [ "$1" = "-h" -o "$1" = "--help" ]
+  then
+      
+    help
+    
+  fi
+
+  createdomain $1
+
+fi
+
+while [ "$#" -gt "1" ]
+do
+
+  case $1 in
+
+    -h|--help)
+      help
+      shift
+      ;;
+
+    *)
+      echo -e "ERROR: Unknown option $1\r\n"
+      exit 1
+      ;;
+
+  esac
+
+done
+
+#createdomain
