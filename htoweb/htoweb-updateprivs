@@ -1,7 +1,78 @@
 #!/bin/bash
 
-/bin/chown $1:$1 /var/www/$1/htdocs
-/usr/bin/find /var/www/$1/htdocs -type d -exec /bin/chmod 750 {} +
-/usr/bin/find /var/www/$1/htdocs -type f -exec /bin/chmod 640 {} +
+#Define variables, some have default values
+
+DOCROOT="/var/www"
+DOMAIN=""
+
+#Main function
+
+function updateprivs() {
+
+  DOMAIN=${1//[-._]/}
+
+  chown -R $DOMAIN:$DOMAIN $DOCROOT/$DOMAIN/htdocs
+  find $DOCROOT/$DOMAIN/htdocs -type d -exec chmod 750 {} +
+  find $DOCROOT/$DOMAIN/htdocs -type f -exec chmod 640 {} +
+
+  exit 0
 
 
+}
+
+#Command line options
+
+if [ "$#" -eq "0" ]
+then
+
+  help
+
+elif [ "$#" -eq "1" ]
+then
+
+  if [ "$1" = "-h" -o "$1" = "--help" ]
+  then
+    
+    help
+    
+  fi  
+
+  updateprivs $1
+
+fi
+
+
+while [ "$#" -gt 1 ]
+do
+
+  case $1 in
+
+    -d|--docroot)
+      if [ "$#" -gt 2 ]
+      then
+
+        DOCROOT=$2
+        shift 2
+
+      else
+
+        echo -e "$0: ERROR: Missing argument for $1\r\n"
+        exit 1
+
+      fi
+      ;;
+
+    -h|--help)
+      help
+      ;;
+
+    *)
+      echo -e "$0: ERROR: Unknown option $1\r\n"
+      exit 1
+      ;;
+
+  esac
+
+done
+
+updateprivs $1 $DOCROOT

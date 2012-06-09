@@ -1,18 +1,38 @@
 #!/bin/bash
 
+#Variables, with some default values
+
+DOCROOT="/var/www"
+
+#Usage
+
 function help() {
   
   echo -e "\r\nUsage:
-  -h, --help\t      Print this help
+  -d, --docroot\t	Global directory for DocumentRoots (/var/www)
+  -h, --help\t      	Print this help
   "  
   exit 0
 
 }
 
+#Error handling
+
 function missing_arg() {
 
   echo -e "ERROR: Missing argument for $1\r\n"
   exit 1
+
+}
+
+function external_error() {
+
+  if [ "$?" -ne 0 ]
+  then
+
+    exit 1
+
+  fi
 
 }
 
@@ -24,43 +44,44 @@ createdomain() {
   DOMAIN=${1//[-._]/}
 
   #Create User
-  useradd -s /bin/false -d /var/www/$DOMAIN/htdocs $DOMAIN
+  useradd -s /bin/false -d $DOCROOT/$DOMAIN/htdocs $DOMAIN
   adduser www-data $DOMAIN
 
   #Create folders
-  mkdir -p /var/www/$DOMAIN/htdocs/public
-  mkdir /var/www/$DOMAIN/logs
-  mkdir /var/www/$DOMAIN/conf
-  mkdir /var/www/$DOMAIN/sessions
-  mkdir /var/www/$DOMAIN/tmp
+  mkdir -p $DOCROOT/$DOMAIN/htdocs/public
+  mkdir $DOCROOT/$DOMAIN/logs
+  mkdir $DOCROOT/$DOMAIN/conf
+  mkdir $DOCROOT/$DOMAIN/sessions
+  mkdir $DOCROOT/$DOMAIN/tmp
 
   #Create VirtualHost config
-  ./htoweb-createvhost $DOMAIN $FULLDOMAIN
+  ./htoweb-createvhost $FULLDOMAIN
 
   #Create FCGID Wrapper Script
-  echo -e "#!/bin/sh" >> /var/www/$DOMAIN/conf/fcgid
-  echo -e 'export PHPRC="/var/www/$DOMAIN/conf/"' >> /var/www/$DOMAIN/conf/fcgid
-  echo -e "exec /usr/bin/php5-cgi" >> /var/www/$DOMAIN/conf/fcgid
+  echo -e "#!/bin/sh" >> $DOCROOT/$DOMAIN/conf/fcgid
+  echo -e 'export PHPRC="$DOCROOT/$DOMAIN/conf/"' >> $DOCROOT/$DOMAIN/conf/fcgid
+  echo -e "exec /usr/bin/php5-cgi" >> $DOCROOT/$DOMAIN/conf/fcgid
 
   #Create php.ini
-  ./htoweb-createphpini $DOMAIN
+  ./htoweb-createphpini -d $DOCROOT $DOMAIN 
+  external_error
 
   #Set owners to dirs/files
-  chown root:$DOMAIN /var/www/$DOMAIN
-  chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/*
-  chown root:root /var/www/$DOMAIN/logs
-  chown root:$DOMAIN /var/www/$DOMAIN/conf/php.ini
-  chown $DOMAIN:$DOMAIN /var/www/$DOMAIN/conf/fcgid
+  chown root:$DOMAIN $DOCROOT/$DOMAIN
+  chown $DOMAIN:$DOMAIN $DOCROOT/$DOMAIN/*
+  chown root:root $DOCROOT/$DOMAIN/logs
+  chown root:$DOMAIN $DOCROOT/$DOMAIN/conf/php.ini
+  chown $DOMAIN:$DOMAIN $DOCROOT/$DOMAIN/conf/fcgid
   
   #Set permissions to dirs/files
-  chmod 750 /var/www/$DOMAIN
-  chmod 750 /var/www/$DOMAIN/*
-  chmod 640 /var/www/$DOMAIN/conf/php.ini
-  chmod 750 /var/www/$DOMAIN/conf/fcgid
-  chmod 750 /var/www/$DOMAIN/htdocs
+  chmod 750 $DOCROOT/$DOMAIN
+  chmod 750 $DOCROOT/$DOMAIN/*
+  chmod 640 $DOCROOT/$DOMAIN/conf/php.ini
+  chmod 750 $DOCROOT/$DOMAIN/conf/fcgid
+  chmod 750 $DOCROOT/$DOMAIN/htdocs
 
   #Run htoweb-updateprivs
-  ./htoweb-updateprivs $DOMAIN
+  ./htoweb-updateprivs -d $DOCROOT $DOMAIN
 
   #Enable VirtualHost and reload Apache
   a2ensite $DOMAIN
@@ -96,9 +117,23 @@ do
 
   case $1 in
 
+    -d|--docroot)
+      if [ "$#" -gt 2 ]
+      then
+ 
+        DOCROOT=$2
+        shift 2
+
+      else
+      
+        echo -e "$0: ERROR: Missing argument for $1\r\n"
+        exit 1
+
+      fi
+      ;;
+
     -h|--help)
       help
-      shift
       ;;
 
     *)
@@ -110,4 +145,4 @@ do
 
 done
 
-#createdomain
+createdomain $1 $DOCROOT

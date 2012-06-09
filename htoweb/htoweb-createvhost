@@ -1,17 +1,29 @@
 #!/bin/bash
 
-cat >> /etc/apache2/sites-available/$1 << EOC
+#Define variables, some have default values
+
+DOCROOT="/var/www"
+DOMAIN=""
+
+#Main function
+
+function create_vhost() {
+
+FULLDOMAIN=$1
+DOMAIN=${FULLDOMAIN//[-._]/}
+
+cat >> /etc/apache2/sites-available/$DOMAIN << EOC
 <VirtualHost *:80>
-    ServerName $2
+    ServerName $FULLDOMAIN
     ServerAdmin admins@hateo.de
 
     Include /etc/apache2/mods-available/fcgid.conf
 
-    DocumentRoot /var/www/$1/htdocs/public
-    SuexecUserGroup $1 $1
+    DocumentRoot $DOCROOT/$DOMAIN/htdocs/public
+    SuexecUserGroup $DOMAIN $DOMAIN
 
-    <Directory /var/www/$1/htdocs/public>
-        FCGIWrapper /var/www/$1/conf/fcgid .php
+    <Directory $DOCROOT/$DOMAIN/htdocs/public>
+        FCGIWrapper $DOCROOT/$DOMAIN/conf/fcgid .php
         <FilesMatch \.php$>
         	SetHandler fcgid-script
         </FilesMatch>
@@ -22,8 +34,63 @@ cat >> /etc/apache2/sites-available/$1 << EOC
     </Directory>
 
     LogLevel warn
-    ErrorLog /var/www/$1/logs/error.log
-    CustomLog /var/www/$1/logs/access.log combined
+    ErrorLog $DOCROOT/$DOMAIN/logs/error.log
+    CustomLog $DOCROOT/$DOMAIN/logs/access.log combined
 </VirtualHost>
 
 EOC
+
+exit 0
+
+}
+
+#Command line options
+
+if [ "$#" -eq "1" ]
+then
+
+  if [ "$1" = "-h" -o "$1" = "--help" ]
+  then
+    
+    help
+    
+  fi  
+
+  create_vhost $1
+
+fi
+
+while [ "$#" -gt 1 ] 
+do
+
+  case $1 in
+
+    -d|--docroot)
+      if [ "$#" -gt 2 ] 
+      then
+
+        DOCROOT=$2
+        shift 2
+
+      else
+
+        echo -e "$0: ERROR: Missing argument for $1\r\n"
+        exit 1
+
+      fi  
+      ;;  
+
+    -h|--help)
+      help
+      ;;  
+
+    *)  
+      echo -e "$0: ERROR: Unknown option $1\r\n"
+      exit 1
+      ;;  
+
+  esac
+
+done
+
+create_vhost $1 $DOCROOT

@@ -1,10 +1,65 @@
 #!/bin/bash
 
-cat >> /var/www/$1/conf/php.ini << EOC
+#Define variables, some have default values
 
-open_basedir = /var/www/$1/htdocs/public:/var/www/$1/tmp/
-upload_tmp_dir = /var/www/$1/tmp
-soap.wsdl_cache_dir = /var/www/$1/tmp
-session.save_path = /var/www/$1/sessions
+DOCROOT="/var/www"
 
+#Main functions
+
+function create_phpini() {
+
+cat >> $DOCROOT/$DOMAIN/conf/php.ini << EOC
+open_basedir = $DOCROOT/$DOMAIN/htdocs/public:$DOCROOT/$DOMAIN/tmp/
+upload_tmp_dir = $DOCROOT/$DOMAIN/tmp
+soap.wsdl_cache_dir = $DOCROOT/$DOMAIN/tmp
+session.save_path = $DOCROOT/$DOMAIN/sessions
 EOC
+
+}
+
+#Command line options
+
+if [ "$#" -eq 0 ]
+then
+
+  echo -e "$0: ERROR: No options given.\r\n"
+  exit 1
+
+fi
+
+while [ "$#" -gt 1 ]
+do
+
+  case $1 in
+
+    -d|--docroot)
+      if [ "$#" -gt 2 ]
+      then
+
+        DOCROOT=$2
+
+      else
+
+        echo -e "$0: ERROR: Missing argument for $1\r\n"
+        exit 1
+
+      fi
+      shift 2
+      ;;
+
+    -h|--help)
+      help
+      ;;
+
+    *)
+      echo -e "$0: ERROR: Unknown option $1\r\n"
+      exit 1
+      ;;
+
+  esac
+
+done
+
+DOMAIN=${1//[-._]/}
+
+create_phpini $DOMAIN $DOCROOT
