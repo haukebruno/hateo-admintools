@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#Define variables
+
+DOMAIN=${1//[-._]/}
+DOCROOT=$(egrep -r DocumentRoot /etc/apache2/sites-available/$DOMAIN)
+
+#Optional functions
+
+function get_rootpath() {
+
+  ROOTPATH=($DOCROOT)
+  ROOTPATH=${ROOTPATH[1]}
+  ROOTPATH=${ROOTPATH%/htdocs/public}
+
+}
+#Main function
+
+function delete_domain() {
+
+  a2dissite $DOMAIN
+  /etc/init.d/apache2 reload
+
+  rm /etc/apache2/sites-available/$DOMAIN
+
+  get_rootpath
+
+  rm -rf $ROOTPATH
+
+  deluser $DOMAIN
+  delgroup $DOMAIN
+
+  exit 0
+
+}
+
+delete_domain
