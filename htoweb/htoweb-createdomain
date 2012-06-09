@@ -3,6 +3,8 @@
 #Variables, with some default values
 
 DOCROOT="/var/www"
+DOMAIN=""
+HTOPATH=$(dirname $0)
 
 #Usage
 
@@ -55,7 +57,7 @@ createdomain() {
   mkdir $DOCROOT/$DOMAIN/tmp
 
   #Create VirtualHost config
-  ./htoweb-createvhost $FULLDOMAIN
+  $HTOPATH/htoweb-createvhost $FULLDOMAIN
   external_error
 
   #Create FCGID Wrapper Script
@@ -64,7 +66,7 @@ createdomain() {
   echo -e "exec /usr/bin/php5-cgi" >> $DOCROOT/$DOMAIN/conf/fcgid
 
   #Create php.ini
-  ./htoweb-createphpini -d $DOCROOT $DOMAIN 
+  $HTOPATH/htoweb-createphpini -d $DOCROOT $DOMAIN 
   external_error
 
   #Set owners to dirs/files
@@ -82,7 +84,7 @@ createdomain() {
   chmod 750 $DOCROOT/$DOMAIN/htdocs
 
   #Run htoweb-updateprivs
-  ./htoweb-updateprivs -d $DOCROOT $DOMAIN
+  $HTOPATH/htoweb-updateprivs -d $DOCROOT $DOMAIN
   external_error
 
   #Enable VirtualHost and reload Apache
