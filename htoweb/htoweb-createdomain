@@ -122,7 +122,7 @@ do
   case $1 in
 
     -d|--docroot)
-      if [ "$#" -gt 2 ]
+      if [[ "$#" -gt 2 && "$2" != -* ]]
       then
  
         DOCROOT=$2
@@ -130,8 +130,7 @@ do
 
       else
       
-        echo -e "$0: ERROR: Missing argument for $1\r\n"
-        exit 1
+        missing_arg $1
 
       fi
       ;;

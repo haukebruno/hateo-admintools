@@ -10,7 +10,25 @@ TRANSPORT="ftp"
 REMOTE=""
 ENCRYPTKEY=""
 
-#blub
+#Usage
+
+function help() {
+
+  echo -e "\r\nUsage:
+  -d, --docroot DIR\t\t\t\t Global directory for DocumentRoots (/var/www)
+  -D, --domain DOMAINNAME\t\t\t Specific domain, default is all
+  -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
+  -p, --password REMOTEPASSWORD\t\t\t Password for remote user
+  -r, --remote REMOTEHOST\t\t\t IP or name from remote host
+  -t, --transfer [ftp]\t\t\t\t Transfer type (ftp)
+  -u, --user REMOTEUSER\t\t\t\t Remote username
+  -h, --help\t\t\t\t\t Print this help
+  "
+  exit 0
+
+}
+
+#Error handling
 
 function missing_arg() {
 
@@ -30,11 +48,11 @@ function backup_domainroot() {
 
     ftp -inv $REMOTE << EOF
     user $USER $PASSWORD
-    put /tmp/$dir.des3 $dir.des3
+    put /tmp/$dir.des3 domains/$dir.des3
     bye
 EOF
   
-  rm /tmp/$dir.des3
+    rm /tmp/$dir.des3
 
   done
 
@@ -42,46 +60,108 @@ EOF
 
 #Command line options
 
+if [[ "$#" -eq 0 ]] || [[ "$#" -eq 1 && "$1" == "-h" || "$1" == "--help" ]] 
+then
+
+  help
+
+fi
+
 while [ "$#" -gt 0 ]
 do
 
   case $1 in
 
     -d|--docroot)
-      DOCROOT=$2
-      shift 2
+      if [[ "$#" -gt 2 && "$2" != -* ]]
+      then
+      
+        DOCROOT=$2
+        shift 2
+
+      else
+
+	missing_arg $1
+
+      fi
       ;;
 
     -D|--domain)
-      DOMAIN=$2
-      shift 2
+      if [[ "$#" -gt 2 && "$2" != -* ]]
+      then
+
+        DOMAIN=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
       ;;
 
     -t|--transfer)
       ;;
 
     -u|--user)
-      USER=$2
-      shift 2
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+      
+        USER=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
       ;;
 
     -p|--password)
-      PASSWORD=$2
-      shift 2
+      if [[ "$#" -gt 2 && "$2" != -* ]]
+      then
+
+        PASSWORD=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
       ;;
 
     -r|--remote)
-      REMOTE=$2
-      shift 2
+      if [[ "$#" -gt 2 && "$2" != -* ]]
+      then
+
+        REMOTE=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
       ;;
 
     -k|--encryption-passphrase)
-      ENCRYPTKEY=$2
-      shift 2
+      if [[ "$#" -gt 2 && "$2" != -* ]]
+      then
+
+        ENCRYPTKEY=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
       ;;
 
   esac
 
 done
+
 
 backup_domainroot
