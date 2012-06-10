@@ -73,7 +73,7 @@ do
   case $1 in
 
     -d|--docroot)
-      if [[ "$#" -gt 2 && "$2" != -* ]]
+      if [[ "$#" -ge 2 && "$2" != -* ]]
       then
       
         DOCROOT=$2
@@ -87,7 +87,7 @@ do
       ;;
 
     -D|--domain)
-      if [[ "$#" -gt 2 && "$2" != -* ]]
+      if [[ "$#" -ge 2 && "$2" != -* ]]
       then
 
         DOMAIN=$2
@@ -118,7 +118,7 @@ do
       ;;
 
     -p|--password)
-      if [[ "$#" -gt 2 && "$2" != -* ]]
+      if [[ "$#" -ge 2 && "$2" != -* ]]
       then
 
         PASSWORD=$2
@@ -132,7 +132,7 @@ do
       ;;
 
     -r|--remote)
-      if [[ "$#" -gt 2 && "$2" != -* ]]
+      if [[ "$#" -ge 2 && "$2" != -* ]]
       then
 
         REMOTE=$2
@@ -146,7 +146,7 @@ do
       ;;
 
     -k|--encryption-passphrase)
-      if [[ "$#" -gt 2 && "$2" != -* ]]
+      if [[ "$#" -ge 2 && "$2" != -* ]]
       then
 
         ENCRYPTKEY=$2

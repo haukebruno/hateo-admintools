@@ -122,7 +122,7 @@ do
   case $1 in
 
     -d|--docroot)
-      if [[ "$#" -gt 2 && "$2" != -* ]]
+      if [[ "$#" -ge 2 && "$2" != -* ]]
       then
  
         DOCROOT=$2
