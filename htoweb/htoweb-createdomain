@@ -22,7 +22,7 @@ function help() {
 
 function missing_arg() {
 
-  echo -e "ERROR: Missing argument for $1\r\n"
+  echo -e "$0: ERROR: Missing argument for $1\r\n"
   exit 1
 
 }

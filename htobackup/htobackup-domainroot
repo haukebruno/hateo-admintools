@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#Define variables, some has default values
+
+DOCROOT="/var/www"
+USER=""
+PASSWORD=""
+DOMAIN=""
+TRANSPORT="ftp"
+REMOTE=""
+ENCRYPTKEY=""
+
+#blub
+
+function missing_arg() {
+
+  echo -e "$0: ERROR: Missing argument for $1\r\n"
+  exit 1
+
+}
+
+#Main function
+
+function backup_domainroot() {
+
+  for dir in $(ls $DOCROOT/$DOMAIN)
+  do
+
+    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$dir.des3
+
+    ftp -inv $REMOTE << EOF
+    user $USER $PASSWORD
+    put /tmp/$dir.des3 $dir.des3
+    bye
+EOF
+  
+  rm /tmp/$dir.des3
+
+  done
+
+}
+
+#Command line options
+
+while [ "$#" -gt 0 ]
+do
+
+  case $1 in
+
+    -d|--docroot)
+      DOCROOT=$2
+      shift 2
+      ;;
+
+    -D|--domain)
+      DOMAIN=$2
+      shift 2
+      ;;
+
+    -t|--transfer)
+      ;;
+
+    -u|--user)
+      USER=$2
+      shift 2
+      ;;
+
+    -p|--password)
+      PASSWORD=$2
+      shift 2
+      ;;
+
+    -r|--remote)
+      REMOTE=$2
+      shift 2
+      ;;
+
+    -k|--encryption-passphrase)
+      ENCRYPTKEY=$2
+      shift 2
+      ;;
+
+  esac
+
+done
+
+backup_domainroot
