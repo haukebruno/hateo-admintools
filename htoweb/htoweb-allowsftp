@@ -1,0 +1,87 @@
+#!/bin/bash
+
+#Define Variables, some have defaults values
+
+DOCROOT="/var/www"
+DOMAIN=""
+PW=$(pwgen -s 12 1)
+
+#Usage
+
+function help() {
+
+  echo -e "\r\nUsage:
+  -d, --docroot DOCROOT\t Global directory for DocumentRoots (/var/www)
+  -h, --help\t Print this help
+  "
+
+  exit 0
+
+}
+
+#Error handling
+
+function missing_arg() {
+
+  echo -e "$0: ERROR: Missing argument for $1\r\n"
+  exit 1
+
+}
+
+#Main function
+
+function allowsftp() {
+
+  DOMAIN=${1//[-._]/}
+
+  passwd $DOMAIN << EOF
+$PW
+$PW
+EOF
+
+  adduser $DOMAIN sftpusers
+
+  echo -e $DOMAIN "\tautogen\t" $PW >> /root/pws
+
+  exit 0
+
+}
+
+#Command line options
+
+if [ "$#" -eq "0" ]
+then
+
+  help
+
+fi
+
+while [ "$#" -gt "1" ]
+do
+
+  case $1 in
+
+    -d|--docroot)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        DOCROOT=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+    ;;
+
+    *)
+      echo -e "ERROR: Unknown option $1\r\n"
+      exit 1
+      ;;
+
+  esac
+
+done
+
+allowsftp $1 $DOCROOT
