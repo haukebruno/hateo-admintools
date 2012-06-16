@@ -12,7 +12,7 @@ function updateprivs() {
   DOMAIN=${1//[-._]/}
 
   chown root:$DOMAIN $DOCROOT/$DOMAIN/htdocs
-  chown -R $DOMAIN:$DOMAIN $DOCROOT/$DOMAIN/htdocs/public
+  chown -R $DOMAIN:$DOMAIN $DOCROOT/$DOMAIN/htdocs/*
   find $DOCROOT/$DOMAIN/htdocs -type d -exec chmod 750 {} +
   find $DOCROOT/$DOMAIN/htdocs -type f -exec chmod 640 {} +
 

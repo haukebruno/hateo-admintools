@@ -27,7 +27,7 @@ cat >> /etc/apache2/sites-available/$DOMAIN << EOC
         <FilesMatch \.php$>
         	SetHandler fcgid-script
         </FilesMatch>
-        Options +ExecCGI -Indexes
+        Options +ExecCGI -Indexes -FollowSymlinks
         Order allow,deny
         allow from all
         AllowOverride All
