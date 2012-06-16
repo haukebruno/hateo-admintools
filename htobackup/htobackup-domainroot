@@ -9,6 +9,8 @@ DOMAIN=""
 TRANSPORT="ftp"
 REMOTE=""
 ENCRYPTKEY=""
+DATE=$(date +%Y%m%d)
+REMOVE="false"
 
 #Usage
 
@@ -20,6 +22,7 @@ function help() {
   -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
+  -R, --remove\t\t\t\t\t Remove backups from local directory
   -t, --transfer [ftp]\t\t\t\t Transfer type (ftp)
   -u, --user REMOTEUSER\t\t\t\t Remote username
   -h, --help\t\t\t\t\t Print this help
@@ -44,15 +47,33 @@ function backup_domainroot() {
   for dir in $(ls $DOCROOT/$DOMAIN)
   do
 
-    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$dir.des3
+    FILENAME=$dir-$DATE.des3
+
+    if [ -z $ENCRYPTKEY ]
+    then
+
+      ENCRYPTKEY=$(pwgen -s 12 1)
+
+    fi
+
+    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
 
     ftp -inv $REMOTE << EOF
     user $USER $PASSWORD
-    put /tmp/$dir.des3 domains/$dir.des3
+    put /tmp/$FILENAME domains/$FILENAME
     bye
 EOF
   
-    rm /tmp/$dir.des3
+    echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/domains/$FILENAME.passwd
+    chmod 600 /root/backups/domains/$FILENAME.passwd
+
+    if [ $REMOVE = "true" ]
+    then
+    
+      rm /tmp/$FILENAME
+
+    fi
+    
 
   done
 
@@ -143,6 +164,11 @@ do
         missing_arg $1
 
       fi
+      ;;
+
+    -R|--remove)
+      REMOVE="true"
+      shift 1
       ;;
 
     -k|--encryption-passphrase)
