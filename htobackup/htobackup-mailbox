@@ -2,10 +2,10 @@
 
 #Define variables, some has default values
 
-DOCROOT="/var/www"
 USER=""
 PASSWORD=""
 DOMAIN=""
+MAILROOTDIR="/home/vmail"
 TRANSPORT="ftp"
 REMOTE=""
 ENCRYPTKEY=""
@@ -18,9 +18,9 @@ REMOVE="false"
 function help() {
 
   echo -e "\r\nUsage:
-  -d, --docroot DIR\t\t\t\t Global directory for DocumentRoots (/var/www)
-  -D, --domain DOMAINNAME\t\t\t Specific domain, default is all
+  -D, --domain DOMAINNAME\t\t\t Specific domain (all)
   -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
+  -m, --mailroot MAILROOTDIR\t\t Root directory for mail (/home/vmail)
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
   -R, --remove\t\t\t\t\t Remove backups from local directory
@@ -43,13 +43,22 @@ function missing_arg() {
 
 #Main function
 
-function backup_domainroot() {
+function backup_completemailroot() {
 
-  for dir in $(ls $DOCROOT/$DOMAIN)
+  for dir in $(ls $MAILROOTDIR/)
   do
 
-    FILENAME=$dir-$DATE.des3
-    OLDFILENAME=$dir-$DELETEDATE.des3
+    DOM=$dir
+    backup_mailroot $dir $DOM
+
+  done
+
+}
+
+function backup_mailroot() {
+
+  for subdir in $(ls $MAILROOTDIR/$DOMAIN/$dir)
+  do
 
     if [ -z $ENCRYPTKEY ]
     then
@@ -58,17 +67,32 @@ function backup_domainroot() {
 
     fi
 
-    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+    if [ -z $DOMAIN ]
+    then
+    
+      FILENAME="${subdir}@${DOM}-${DATE}.des3"
+      OLDFILENAME="${subdir}@${DOM}-${DELETEDATE}.des3"
+
+      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOM/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+
+    else
+
+      FILENAME="${subdir}@${DOMAIN}-${DATE}.des3"
+      OLDFILENAME="${subdir}@${DOMAIN}-${DELETEDATE}.des3"
+
+      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOMAIN/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+
+    fi
 
     ftp -inv $REMOTE << EOF
     user $USER $PASSWORD
-    delete domains/$OLDFILENAME
-    put /tmp/$FILENAME domains/$FILENAME
+    delete mailboxen/$OLDFILENAME
+    put /tmp/$FILENAME mailboxen/$FILENAME
     bye
 EOF
   
-    echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/domains/$FILENAME.passwd
-    chmod 600 /root/backups/domains/$FILENAME.passwd
+    echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mailboxen/$FILENAME.passwd
+    chmod 600 /root/backups/mailboxen/$FILENAME.passwd
 
     if [ $REMOVE = "true" ]
     then
@@ -96,11 +120,11 @@ do
 
   case $1 in
 
-    -d|--docroot)
+    -m|--mailroot)
       if [[ "$#" -ge 2 && "$2" != -* ]]
       then
       
-        DOCROOT=$2
+        MAILROOTDIR=$2
         shift 2
 
       else
@@ -192,5 +216,13 @@ do
 
 done
 
+if [ -z $DOMAIN ]
+then
 
-backup_domainroot
+  backup_completemailroot
+
+else
+
+  backup_mailroot
+
+fi
