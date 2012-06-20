@@ -14,7 +14,8 @@ DOMAIN=${FULLDOMAIN//[-._]/}
 
 cat >> /etc/apache2/sites-available/$DOMAIN << EOC
 <VirtualHost *:80>
-    ServerName $FULLDOMAIN
+    ServerName www.$FULLDOMAIN
+    ServerAlias $FULLDOMAIN
     ServerAdmin admins@hateo.de
 
     Include /etc/apache2/mods-available/fcgid.conf

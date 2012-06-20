@@ -1,0 +1,223 @@
+#!/bin/bash
+
+#Define variables, some has default values
+
+DOCROOT="/var/www"
+USER=""
+PASSWORD=""
+DOMAIN=""
+TRANSPORT="ftp"
+REMOTE=""
+ENCRYPTKEY=""
+DATE=$(date +%Y%m%d)
+DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
+REMOVE="false"
+MYSQLUSER=""
+MYSQLPASS="blubber"
+DBS=""
+
+#Usage
+
+function help() {
+
+  echo -e "\r\nUsage:
+  -d, --docroot DIR\t\t\t\t Global directory for DocumentRoots (/var/www)
+  -D, --domain DOMAINNAME\t\t\t Specific domain, default is all
+  -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
+  -p, --password REMOTEPASSWORD\t\t\t Password for remote user
+  -P, --mysqlpass MYSQLPASS\t\t\t Password for mysql user
+  -r, --remote REMOTEHOST\t\t\t IP or name from remote host
+  -R, --remove\t\t\t\t\t Remove backups from local directory
+  -t, --transfer [ftp]\t\t\t\t Transfer type (ftp)
+  -u, --user REMOTEUSER\t\t\t\t Remote username
+  -U, --mysqluser MYSQLUSER\t\t\t Mysql user
+  -h, --help\t\t\t\t\t Print this help
+  "
+  exit 0
+
+}
+
+#Error handling
+
+function missing_arg() {
+
+  echo -e "$0: ERROR: Missing argument for $1\r\n"
+  exit 1
+
+}
+
+#Main function
+
+function backup_mysql() {
+
+  if [ -z $ENCRYPTKEY ]
+  then
+
+    ENCRYPTKEY=$(pwgen -s 12 1)
+
+  fi 
+
+  if [ -z $DBS ]
+  then
+
+    DBS=$(mysql -u $MYSQLUSER -p$MYSQLPASS -Bse 'show databases')
+
+  fi
+
+  for db in $DBS
+  do
+
+    FILENAME="${db}-${DATE}.des3"
+    OLDFILENAME="${db}-${DELETEDATE}.des3"
+
+    mysqldump -u $MYSQLUSER -p$MYSQLPASS --opt $db |gzip -c |openssl des3 -salt -k $ENCRYPTKEY - |dd of=/tmp/$FILENAME
+
+
+    ftp -inv $REMOTE << EOF
+    user $USER $PASSWORD
+    delete mysql/$OLDFILENAME
+    put /tmp/$FILENAME mysql/$FILENAME
+    bye
+EOF
+  
+    echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mysql/$FILENAME.passwd
+    chmod 600 /root/backups/mysql/$FILENAME.passwd
+
+    if [ $REMOVE = "true" ]
+    then
+    
+      rm /tmp/$FILENAME
+
+    fi
+    
+
+  done
+
+}
+
+#Command line options
+
+if [[ "$#" -eq 0 ]] || [[ "$#" -eq 1 && "$1" == "-h" || "$1" == "--help" ]] 
+then
+
+  help
+
+fi
+
+while [ "$#" -gt 0 ]
+do
+
+  case $1 in
+
+    -D|--domain)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        DOMAIN=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+      ;;
+
+    -t|--transfer)
+      ;;
+
+    -u|--user)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+      
+        USER=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+      ;;
+
+    -p|--password)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        PASSWORD=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+      ;;
+
+    -r|--remote)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        REMOTE=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+      ;;
+
+    -R|--remove)
+      REMOVE="true"
+      shift 1
+      ;;
+
+    -k|--encryption-passphrase)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        ENCRYPTKEY=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+      ;;
+
+    -U|--mysqluser)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        MYSQLUSER=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi
+      ;;
+
+    -P|--mysqlpass)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+
+        MYSQLPASS=$2
+        shift 2
+
+      else
+
+        missing_arg $2
+
+      fi
+      ;;
+
+  esac
+
+done
+
+
+backup_mysql
