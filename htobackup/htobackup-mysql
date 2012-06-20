@@ -70,7 +70,7 @@ function backup_mysql() {
     FILENAME="${db}-${DATE}.des3"
     OLDFILENAME="${db}-${DELETEDATE}.des3"
 
-    mysqldump -u $MYSQLUSER -p$MYSQLPASS --opt $db |gzip -c |openssl des3 -salt -k $ENCRYPTKEY - |dd of=/tmp/$FILENAME
+    mysqldump -u $MYSQLUSER -p$MYSQLPASS --opt $db | bzip2 -f -9 - -c |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
 
 
     ftp -inv $REMOTE << EOF
