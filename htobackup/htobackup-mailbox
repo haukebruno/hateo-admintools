@@ -92,7 +92,7 @@ function backup_mailroot() {
 EOF
   
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mailboxen/$FILENAME.passwd
-    chmod 600 /root/backups/mailboxen/$FILENAME.passwd
+    chmod 400 /root/backups/mailboxen/$FILENAME.passwd
 
     if [ $REMOVE = "true" ]
     then
