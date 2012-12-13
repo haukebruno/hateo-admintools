@@ -53,6 +53,7 @@ function createdomain() {
 
   #Create folders
   mkdir -p $DOCROOT/$DOMAIN/htdocs/public
+  mkdir -p $DOCROOT/$DOMAIN/htdocs/private
   mkdir $DOCROOT/$DOMAIN/logs
   mkdir $DOCROOT/$DOMAIN/conf
   mkdir $DOCROOT/$DOMAIN/sessions

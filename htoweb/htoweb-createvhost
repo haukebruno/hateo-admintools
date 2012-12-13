@@ -16,7 +16,7 @@ cat >> /etc/apache2/sites-available/$DOMAIN << EOC
 <VirtualHost *:80>
     ServerName www.$FULLDOMAIN
     ServerAlias $FULLDOMAIN
-    ServerAdmin admins@hateo.de
+    ServerAdmin imperator@hateo.de
 
     Include /etc/apache2/mods-available/fcgid.conf
 

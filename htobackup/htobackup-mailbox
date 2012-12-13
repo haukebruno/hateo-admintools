@@ -24,7 +24,7 @@ function help() {
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
   -R, --remove\t\t\t\t\t Remove backups from local directory
-  -t, --transfer [ftp]\t\t\t\t Transfer type (ftp)
+  -t, --transfer [ftp,local]\t\t\t\t Transfer type (ftp)
   -u, --user REMOTEUSER\t\t\t\t Remote username
   -h, --help\t\t\t\t\t Print this help
   "
@@ -84,13 +84,18 @@ function backup_mailroot() {
 
     fi
 
+if [ $TRANSPORT == "ftp" ]
+then
     ftp -inv $REMOTE << EOF
     user $USER $PASSWORD
     delete mailboxen/$OLDFILENAME
     put /tmp/$FILENAME mailboxen/$FILENAME
     bye
 EOF
-  
+elif [ $TRANSPORT == "local" ]
+then
+    cp /tmp/$FILENAME /mnt/backup/users/haukebruno/mailboxen/
+fi  
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mailboxen/$FILENAME.passwd
     chmod 400 /root/backups/mailboxen/$FILENAME.passwd
 
@@ -149,6 +154,13 @@ do
       ;;
 
     -t|--transfer)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+        TRANSPORT=$2
+        shift 2
+      else
+        missing_arg $1
+      fi
       ;;
 
     -u|--user)

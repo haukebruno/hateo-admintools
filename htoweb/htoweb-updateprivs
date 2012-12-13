@@ -15,6 +15,7 @@ function updateprivs() {
   chown -R $DOMAIN:$DOMAIN $DOCROOT/$DOMAIN/htdocs/*
   find $DOCROOT/$DOMAIN/htdocs -type d -exec chmod 750 {} +
   find $DOCROOT/$DOMAIN/htdocs -type f -exec chmod 640 {} +
+  chmod g+w $DOCROOT/$DOMAIN/htdocs/private
 
   exit 0
 
