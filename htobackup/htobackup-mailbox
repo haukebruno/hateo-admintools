@@ -2,17 +2,20 @@
 
 #Define variables, some has default values
 
-USER=""
-PASSWORD=""
-DOMAIN=""
-MAILROOTDIR="/home/vmail"
-TRANSPORT="ftp"
-REMOTE=""
-ENCRYPTKEY=""
 DATE=$(date +%Y%m%d)
 DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
+DESTDIR="/var/backups"
+DOMAIN=""
+ENCRYPTKEY=""
+LOCALDIR="/tmp"
+MAILROOTDIR="/home/vmail"
+PASSWORD=""
+REMOTE=""
 REMOVE="false"
-BACKUPTMPDIR=/var/backups/hateo/mailboxen
+TRANSPORT=""
+USER=""
+
+REQUIRED_ARGS=('TRANSPORT')
 
 #Usage
 
@@ -22,10 +25,12 @@ function help() {
   -D, --domain DOMAINNAME\t\t\t Specific domain (all)
   -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
   -m, --mailroot MAILROOTDIR\t\t Root directory for mail (/home/vmail)
+  -l, --localdir DIR\t\t\t\t Local backup directory (/tmp)
+  -L, --destdir DIR\t\t\t\t Directory on destination (/var/backups)
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
   -R, --remove\t\t\t\t\t Remove backups from local directory
-  -t, --transfer [ftp,local]\t\t\t\t Transfer type (ftp)
+  -t, --transfer [ftp,local]\t\t\t\t * Transfer type
   -u, --user REMOTEUSER\t\t\t\t Remote username
   -h, --help\t\t\t\t\t Print this help
   "
@@ -41,6 +46,25 @@ function missing_arg() {
   exit 1
 
 }
+
+function check_required_args() {
+
+  for e in "${REQUIRED_ARGS[@]}"
+  do  
+    
+    tmp=${e}
+    if [[ -z ${!tmp} ]]
+    then
+  
+      echo -e "$0: ERROR: Missing value for \$$e\r\n"
+      exit 1
+
+    fi  
+
+  done
+
+}
+
 
 #Main function
 
@@ -74,36 +98,37 @@ function backup_mailroot() {
       FILENAME="${subdir}@${DOM}-${DATE}.des3"
       OLDFILENAME="${subdir}@${DOM}-${DELETEDATE}.des3"
 
-      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOM/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$BACKUPTMPDIR/$FILENAME
+      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOM/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$LOCALDIR/$FILENAME
 
     else
 
       FILENAME="${subdir}@${DOMAIN}-${DATE}.des3"
       OLDFILENAME="${subdir}@${DOMAIN}-${DELETEDATE}.des3"
 
-      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOMAIN/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$BACKUPTMPDIR/$FILENAME
+      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOMAIN/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$LOCALDIR/$FILENAME
 
     fi
 
-if [ $TRANSPORT == "ftp" ]
-then
-    ftp -inv $REMOTE << EOF
-    user $USER $PASSWORD
-    delete mailboxen/$OLDFILENAME
-    put /$BACKUPTMPDIR/$FILENAME mailboxen/$FILENAME
-    bye
+    if [ $TRANSPORT == "ftp" ]
+    then
+      ftp -inv $REMOTE << EOF
+      user $USER $PASSWORD
+      delete mailboxen/$OLDFILENAME
+      put /$LOCALDIR/$FILENAME mailboxen/$FILENAME
+      bye
 EOF
-elif [ $TRANSPORT == "local" ]
-then
-    cp $BACKUPTMPDIR/$FILENAME /mnt/backup/users/haukebruno/mailboxen/
-fi  
+    elif [ $TRANSPORT == "local" ]
+    then
+      cp $LOCALDIR/$FILENAME $DESTDIR
+    fi  
+    
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mailboxen/$FILENAME.passwd
     chmod 400 /root/backups/mailboxen/$FILENAME.passwd
 
     if [ $REMOVE = "true" ]
     then
     
-      rm $BACKUPTMPDIR/$FILENAME
+      rm $LOCALDIR/$FILENAME
 
     fi
     
@@ -224,6 +249,34 @@ do
 
       fi
       ;;
+
+    -l|--localdir)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+        then
+
+          LOCALDIR=$2
+          shift 2;
+    
+        else
+
+         missing_arg $1
+
+        fi  
+        ;;  
+
+    -L|--destdir)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+         then
+ 
+           DESTDIR=$2
+           shift 2;
+ 
+         else
+ 
+          missing_arg $1
+ 
+         fi  
+         ;;  
 
   esac
 
