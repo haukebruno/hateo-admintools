@@ -2,30 +2,38 @@
 
 #Define variables, some has default values
 
-DOCROOT="/var/www"
-USER=""
-PASSWORD=""
-DOMAIN=""
-TRANSPORT="ftp"
-REMOTE=""
-ENCRYPTKEY=""
 DATE=$(date +%Y%m%d)
 DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
+DESTDIR="/var/backups"
+DOCROOT="/var/www"
+DOMAIN=""
+ENCRYPTKEY=""
+LOCALDIR="/tmp"
+PASSWORD=""
+REMOTE=""
 REMOVE="false"
-BACKUPTMPDIR=/var/backups/hateo/domains
+USER=""
+TRANSPORT=""
+
+REQUIRED_ARGS=('TRANSPORT')
 
 #Usage
 
 function help() {
 
+  echo -e "\r\nhtobackup-domainroot: Backup your DocumentRoots fully encrypted to different locations via different protocols"
+  echo -e "Options marked with '*' are required!"
+
   echo -e "\r\nUsage:
   -d, --docroot DIR\t\t\t\t Global directory for DocumentRoots (/var/www)
   -D, --domain DOMAINNAME\t\t\t Specific domain, default is all
   -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
+  -l, --localdir DIR\t\t\t\t Local backup directory (/tmp)
+  -L, --destdir DIR\t\t\t\t Directory on destination (/var/backups)
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
   -R, --remove\t\t\t\t\t Remove backups from local directory
-  -t, --transfer [ftp, local]\t\t\t\t Transfer type (ftp)
+  -t, --transfer [ftp, local]\t\t\t * Transfer type
   -u, --user REMOTEUSER\t\t\t\t Remote username
   -h, --help\t\t\t\t\t Print this help
   "
@@ -42,38 +50,84 @@ function missing_arg() {
 
 }
 
+function check_required_args() {
+
+  for e in "${REQUIRED_ARGS[@]}"
+  do
+    
+    tmp=${e}
+    if [[ -z ${!tmp} ]]
+    then
+  
+      echo -e "$0: ERROR: Missing value for \$$e\r\n"
+      exit 1
+
+    fi
+
+  done
+
+}
+
 #Main function
 
 function backup_domainroot() {
 
-  for dir in $(ls $DOCROOT/$DOMAIN)
-  do
-
-    FILENAME=$dir-$DATE.des3
-    OLDFILENAME=$dir-$DELETEDATE.des3
-
-    if [ -z $ENCRYPTKEY ]
+  if [ -z $ENCRYPTKEY ]
     then
 
       ENCRYPTKEY=$(pwgen -s 12 1)
 
-    fi
+  fi
 
-    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$BACKUPTMPDIR/$FILENAME
+  if [[ $DOMAIN ]]
+  then
 
-    if [ $TRANSPORT == "ftp" ]
+    FILENAME=$DOMAIN-$DATE.des3
+    OLDFILENAME=$DOMAIN-$DELETEDATE.des3
+
+    tar -cjf - -p --atime-preserve -C $DOCROOT $DOCROOT/$DOMAIN |openssl des3 -salt -k $ENCRYPTKEY |dd of=$LOCALDIR/$FILENAME
+
+    copy_backup
+
+    exit 0
+
+  else
+
+    for dir in $(ls $DOCROOT/$DOMAIN)
+    do
+
+      FILENAME=$dir-$DATE.des3
+      OLDFILENAME=$dir-$DELETEDATE.des3
+
+      tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$LOCALDIR/$FILENAME
+
+      copy_backup
+
+    done
+
+    exit 0
+
+  fi
+
+}
+
+#Copy function
+
+function copy_backup() {
+
+if [ $TRANSPORT == "ftp" ]
     then
 
       ftp -inv $REMOTE << EOF
       user $USER $PASSWORD
       delete domains/$OLDFILENAME
-      put $BACKUPTMPDIR/$FILENAME domains/$FILENAME
+      put $LOCALDIR/$FILENAME domains/$FILENAME
       bye
 EOF
     elif [ $TRANSPORT == "local" ]
     then
-      cp $BACKUPTMPDIR/$FILENAME /mnt/backup/users/haukebruno/domains/
-    fi
+      cp $LOCALDIR/$FILENAME $DESTDIR
+    fi  
 
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/domains/$FILENAME.passwd
     chmod 400 /root/backups/domains/$FILENAME.passwd
@@ -81,12 +135,9 @@ EOF
     if [ $REMOVE = "true" ]
     then
     
-      rm $BACKUPTMPDIR/$FILENAME
+      rm $LOCALDIR/$FILENAME
 
     fi
-    
-
-  done
 
 }
 
@@ -146,12 +197,49 @@ do
       fi
       ;;
 
+    -l|--localdir)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+        then
+
+          LOCALDIR=$2
+          shift 2;
+        
+        else
+
+         missing_arg $1
+
+        fi
+        ;;
+
+    -L|--destdir)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+         then
+ 
+           DESTDIR=$2
+           shift 2;
+ 
+         else
+ 
+          missing_arg $1
+ 
+         fi
+         ;;
+
     -u|--user)
       if [[ "$#" -ge 2 && "$2" != -* ]]
       then
       
-        USER=$2
-        shift 2
+        if [[ -z $2 ]]
+        then
+
+          echo "kein user gesetzt"
+          exit 1
+        else
+
+          USER=$2
+          shift 2
+      
+        fi
 
       else
 
@@ -211,5 +299,6 @@ do
 
 done
 
+check_required_args
 
 backup_domainroot
