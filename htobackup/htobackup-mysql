@@ -69,6 +69,15 @@ function check_required_args() {
 
   done
 
+  if [[ $TRANSFER == 'ftp' ]] && [[ -z $USER || -z $PASSWORD || -z $REMOTE ]]
+  then
+
+    echo -e "$0: ERROR: Transfer via 'ftp' not possible without username, password and host\r\n"
+    exit 1
+
+  fi 
+
+
 }
 
 #Main function

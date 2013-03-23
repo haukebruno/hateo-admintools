@@ -12,10 +12,10 @@ MAILROOTDIR="/home/vmail"
 PASSWORD=""
 REMOTE=""
 REMOVE="false"
-TRANSPORT=""
+TRANSFER=""
 USER=""
 
-REQUIRED_ARGS=('TRANSPORT')
+REQUIRED_ARGS=('TRANSFER')
 
 #Usage
 
@@ -66,6 +66,14 @@ function check_required_args() {
 
   done
 
+ if [[ $TRANSFER == 'ftp' ]] && [[ -z $USER || -z $PASSWORD || -z $REMOTE ]]
+  then
+
+    echo -e "$0: ERROR: Transfer via 'ftp' not possible without username, password and host\r\n"
+    exit 1
+
+ fi
+
 }
 
 
@@ -112,7 +120,7 @@ function backup_mailroot() {
 
     fi
 
-    if [ $TRANSPORT == "ftp" ]
+    if [ $TRANSFER == "ftp" ]
     then
       ftp -inv $REMOTE << EOF
       user $USER $PASSWORD
@@ -120,7 +128,7 @@ function backup_mailroot() {
       put /$LOCALDIR/$FILENAME mailboxen/$FILENAME
       bye
 EOF
-    elif [ $TRANSPORT == "local" ]
+    elif [ $TRANSFER == "local" ]
     then
       cp $LOCALDIR/$FILENAME $DESTDIR
     fi  
@@ -185,7 +193,7 @@ do
     -t|--transfer)
       if [[ "$#" -ge 2 && "$2" != -* ]]
       then
-        TRANSPORT=$2
+        TRANSFER=$2
         shift 2
       else
         missing_arg $1
