@@ -21,16 +21,19 @@ REQUIRED_ARGS=('TRANSPORT')
 
 function help() {
 
+  echo -e "\r\nhtobackup-mailbox: Backup your domain mailboxes fully encrypted to different locations via different protocols"
+  echo -e "Options marked with '*' are required!"
+
   echo -e "\r\nUsage:
   -D, --domain DOMAINNAME\t\t\t Specific domain (all)
   -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
-  -m, --mailroot MAILROOTDIR\t\t Root directory for mail (/home/vmail)
+  -m, --mailroot MAILROOTDIR\t\t\t Root directory for mail (/home/vmail)
   -l, --localdir DIR\t\t\t\t Local backup directory (/tmp)
   -L, --destdir DIR\t\t\t\t Directory on destination (/var/backups)
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
   -R, --remove\t\t\t\t\t Remove backups from local directory
-  -t, --transfer [ftp,local]\t\t\t\t * Transfer type
+  -t, --transfer [ftp,local]\t\t\t * Transfer type
   -u, --user REMOTEUSER\t\t\t\t Remote username
   -h, --help\t\t\t\t\t Print this help
   "
@@ -281,6 +284,8 @@ do
   esac
 
 done
+
+check_required_args
 
 if [ -z $DOMAIN ]
 then

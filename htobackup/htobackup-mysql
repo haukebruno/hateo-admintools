@@ -2,35 +2,42 @@
 
 #Define variables, some has default values
 
-DOCROOT="/var/www"
-USER=""
-PASSWORD=""
-DOMAIN=""
-TRANSPORT="ftp"
-REMOTE=""
-ENCRYPTKEY=""
 DATE=$(date +%Y%m%d)
-DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
-REMOVE="false"
-MYSQLUSER=""
-MYSQLPASS="blubber"
 DBS=""
+DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
+DESTDIR="/var/backups"
+DOMAIN=""
+ENCRYPTKEY=""
+LOCALDIR="/tmp"
+MYSQLPASS=""
+MYSQLUSER=""
+PASSWORD=""
+REMOTE=""
+REMOVE="false"
+TRANSFER=""
+USER=""
+
+REQUIRED_ARGS=('TRANSFER' 'MYSQLPASS' 'MYSQLUSER')
 
 #Usage
 
 function help() {
 
+  echo -e "\r\nhtobackup-mysql: Backup your mysql databases fully encrypted to different locations via different protocols"
+  echo -e "Options marked with '*' are required!"
+
   echo -e "\r\nUsage:
-  -d, --docroot DIR\t\t\t\t Global directory for DocumentRoots (/var/www)
   -D, --domain DOMAINNAME\t\t\t Specific domain, default is all
+  -l, --localdir DIR\t\t\t\t Local backup directory (/tmp)
+  -L, --destdir DIR\t\t\t\t Directory on destination (/var/backups)
   -k, --encryption-passphrase YOURPASSPHRASE\t Set passphrase for encrypted files
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
-  -P, --mysqlpass MYSQLPASS\t\t\t Password for mysql user
+  -P, --mysqlpass MYSQLPASS\t\t\t * Password for mysql user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
   -R, --remove\t\t\t\t\t Remove backups from local directory
-  -t, --transfer [ftp]\t\t\t\t Transfer type (ftp)
+  -t, --transfer [ftp,local]\t\t\t * Transfer type
   -u, --user REMOTEUSER\t\t\t\t Remote username
-  -U, --mysqluser MYSQLUSER\t\t\t Mysql user
+  -U, --mysqluser MYSQLUSER\t\t\t * Mysql user
   -h, --help\t\t\t\t\t Print this help
   "
   exit 0
@@ -43,6 +50,24 @@ function missing_arg() {
 
   echo -e "$0: ERROR: Missing argument for $1\r\n"
   exit 1
+
+}
+
+function check_required_args() {
+
+  for e in "${REQUIRED_ARGS[@]}"
+  do  
+    
+    tmp=${e}
+    if [[ -z ${!tmp} ]]
+    then
+  
+      echo -e "$0: ERROR: Missing value for \$$e\r\n"
+      exit 1
+
+    fi  
+
+  done
 
 }
 
@@ -70,8 +95,10 @@ function backup_mysql() {
     FILENAME="${db}-${DATE}.des3"
     OLDFILENAME="${db}-${DELETEDATE}.des3"
 
-    mysqldump -u $MYSQLUSER -p$MYSQLPASS --opt $db | bzip2 -f -9 - -c |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+    mysqldump -u $MYSQLUSER -p$MYSQLPASS --opt $db | bzip2 -f -9 - -c |openssl des3 -salt -k $ENCRYPTKEY |dd of=$LOCALDIR/$FILENAME
 
+  if [[ $TRANSFER == 'ftp' ]]
+  then
 
     ftp -inv $REMOTE << EOF
     user $USER $PASSWORD
@@ -80,13 +107,20 @@ function backup_mysql() {
     bye
 EOF
   
+  elif [[ $TRANSFER == 'local' ]]
+  then
+
+    cp $LOCALDIR/$FILENAME $DESTDIR
+
+  fi
+
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mysql/$FILENAME.passwd
     chmod 400 /root/backups/mysql/$FILENAME.passwd
 
     if [ $REMOVE = "true" ]
     then
     
-      rm /tmp/$FILENAME
+      rm $LOCALDIR/$FILENAME
 
     fi
     
@@ -124,7 +158,18 @@ do
       ;;
 
     -t|--transfer)
-      ;;
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+      then
+    
+        TRANSFER=$2
+        shift 2
+
+      else
+
+        missing_arg $1
+
+      fi  
+      ;; 
 
     -u|--user)
       if [[ "$#" -ge 2 && "$2" != -* ]]
@@ -215,9 +260,38 @@ do
       fi
       ;;
 
+    -l|--localdir)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+        then
+
+          LOCALDIR=$2
+          shift 2;
+    
+        else
+
+         missing_arg $1
+
+        fi  
+        ;;  
+
+    -L|--destdir)
+      if [[ "$#" -ge 2 && "$2" != -* ]]
+         then
+ 
+           DESTDIR=$2
+           shift 2;
+ 
+         else
+ 
+          missing_arg $1
+ 
+         fi  
+         ;;  
+
   esac
 
 done
 
+check_required_args
 
 backup_mysql
