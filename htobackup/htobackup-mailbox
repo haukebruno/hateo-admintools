@@ -12,6 +12,7 @@ ENCRYPTKEY=""
 DATE=$(date +%Y%m%d)
 DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
 REMOVE="false"
+BACKUPTMPDIR=/var/backups/hateo/mailboxen
 
 #Usage
 
@@ -73,14 +74,14 @@ function backup_mailroot() {
       FILENAME="${subdir}@${DOM}-${DATE}.des3"
       OLDFILENAME="${subdir}@${DOM}-${DELETEDATE}.des3"
 
-      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOM/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOM/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$BACKUPTMPDIR/$FILENAME
 
     else
 
       FILENAME="${subdir}@${DOMAIN}-${DATE}.des3"
       OLDFILENAME="${subdir}@${DOMAIN}-${DELETEDATE}.des3"
 
-      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOMAIN/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+      tar -cjf - -p --atime-preserve -C $MAILROOTDIR $DOMAIN/$subdir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$BACKUPTMPDIR/$FILENAME
 
     fi
 
@@ -89,12 +90,12 @@ then
     ftp -inv $REMOTE << EOF
     user $USER $PASSWORD
     delete mailboxen/$OLDFILENAME
-    put /tmp/$FILENAME mailboxen/$FILENAME
+    put /$BACKUPTMPDIR/$FILENAME mailboxen/$FILENAME
     bye
 EOF
 elif [ $TRANSPORT == "local" ]
 then
-    cp /tmp/$FILENAME /mnt/backup/users/haukebruno/mailboxen/
+    cp $BACKUPTMPDIR/$FILENAME /mnt/backup/users/haukebruno/mailboxen/
 fi  
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/mailboxen/$FILENAME.passwd
     chmod 400 /root/backups/mailboxen/$FILENAME.passwd
@@ -102,7 +103,7 @@ fi
     if [ $REMOVE = "true" ]
     then
     
-      rm /tmp/$FILENAME
+      rm $BACKUPTMPDIR/$FILENAME
 
     fi
     

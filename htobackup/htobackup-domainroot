@@ -12,6 +12,7 @@ ENCRYPTKEY=""
 DATE=$(date +%Y%m%d)
 DELETEDATE=$(date --date="7 days ago" +%Y%m%d)
 REMOVE="false"
+BACKUPTMPDIR=/var/backups/hateo/domains
 
 #Usage
 
@@ -58,7 +59,7 @@ function backup_domainroot() {
 
     fi
 
-    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=/tmp/$FILENAME
+    tar -cjf - -p --atime-preserve -C $DOCROOT $dir |openssl des3 -salt -k $ENCRYPTKEY |dd of=$BACKUPTMPDIR/$FILENAME
 
     if [ $TRANSPORT == "ftp" ]
     then
@@ -66,12 +67,12 @@ function backup_domainroot() {
       ftp -inv $REMOTE << EOF
       user $USER $PASSWORD
       delete domains/$OLDFILENAME
-      put /tmp/$FILENAME domains/$FILENAME
+      put $BACKUPTMPDIR/$FILENAME domains/$FILENAME
       bye
 EOF
     elif [ $TRANSPORT == "local" ]
     then
-      cp /tmp/$FILENAME /mnt/backup/users/haukebruno/domains/
+      cp $BACKUPTMPDIR/$FILENAME /mnt/backup/users/haukebruno/domains/
     fi
 
     echo -e $FILENAME "\t" $ENCRYPTKEY > /root/backups/domains/$FILENAME.passwd
@@ -80,7 +81,7 @@ EOF
     if [ $REMOVE = "true" ]
     then
     
-      rm /tmp/$FILENAME
+      rm $BACKUPTMPDIR/$FILENAME
 
     fi
     
