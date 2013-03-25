@@ -76,6 +76,14 @@ function check_required_args() {
 
   fi
 
+  if [[ "$TRANSFER" != "ftp" && "$TRANSFER" != "local" ]]
+  then
+
+    echo -e "$0: ERROR: Transfer $TRANSFER is invalid\r\n"
+    exit 1
+
+  fi
+
 }
 
 #Main function
@@ -108,6 +116,7 @@ function backup_domainroot() {
     for dir in $(ls $DOCROOT/$DOMAIN)
     do
 
+      DOMAIN=$dir
       FILENAME=$dir-$DATE.des3
       OLDFILENAME=$dir-$DELETEDATE.des3
 
@@ -135,17 +144,31 @@ then
   put $LOCALDIR/$FILENAME $DESTDIR/$FILENAME
   bye
 EOF
-#  if [ -n $AGE ]
-#  then
 
-#    ftp -inv $REMOTE << EOF
-#    user $USER $PASSWORD
-#!pwd
-#!find  -type f -ls
-#    bye
-#EOF
+  if [ -n $AGE ]
+  then
 
-# fi
+    ftp -inv $REMOTE << EOF
+    user $USER $PASSWORD
+    dir $DESTDIR $LOCALDIR/tmplist
+EOF
+
+    for i in $(awk '{print $9}' $LOCALDIR/tmplist)
+    do
+
+      if [[ "$i" == $DOMAIN* && "$i" < "$OLDFILENAME" ]]
+      then
+
+        ftp -inv $REMOTE << EOF
+        user $USER $PASSWORD
+        mdelete $DESTDIR/$i
+EOF
+
+      fi
+
+    done
+
+  fi
 
 
 elif [ $TRANSFER == "local" ]
