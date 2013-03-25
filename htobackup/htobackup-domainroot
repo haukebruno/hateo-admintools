@@ -35,7 +35,7 @@ function help() {
   -L, --destdir DIR\t\t\t\t Directory on destination (/var/backups)
   -p, --password REMOTEPASSWORD\t\t\t Password for remote user
   -r, --remote REMOTEHOST\t\t\t IP or name from remote host
-  -R, --remove\t\t\t Remove backups from local directory
+  -R, --remove\t\t\t\t Remove backups from local directory
   -u, --user REMOTEUSER\t\t\t\t Remote username
   -h, --help\t\t\t\t\t Print this help
   "
