@@ -36,7 +36,7 @@ cat >> /etc/apache2/sites-available/$DOMAIN << EOC
 
     LogLevel warn
     ErrorLog $DOCROOT/$DOMAIN/logs/error.log
-    CustomLog $DOCROOT/$DOMAIN/logs/access.log combined
+    CustomLog $DOCROOT/$DOMAIN/logs/access.log vhost_combined
 </VirtualHost>
 
 EOC
